@@ -1,96 +1,73 @@
-# EduApp — AI苏格拉底式学习伙伴
+# React + TypeScript + Vite
 
-> 在AI时代，最珍贵的能力不是获取答案，而是提出好问题。
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## 什么是EduApp？
+Currently, two official plugins are available:
 
-EduApp是一款**AI苏格拉底式学习伙伴**——它不给答案，而是通过引导式提问帮助学生自己发现答案、构建独立思考能力。
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-当所有人都在用AI获取答案时，我们在用AI教你**如何思考**。
+## React Compiler
 
-### 核心体验
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-学生：「为什么月亮不会掉下来？」
-AI：  「好问题！你觉得月亮在做什么运动？」
-学生：「绕地球转？」
-AI：  「对！那转弯需要什么条件？想想你骑自行车转弯时...」
-学生：「需要一个力把它拉向中间？」
-AI：  「太棒了！这就是向心力的概念。那提供这个力的是什么呢？」
-学生：「地球的引力！」
-AI：  「你自己推导出了万有引力和向心力的关系！」
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
-
-对话结束后，生成一张**思维发现地图**——可视化你的思考路径，让思考过程"看得见"。
-
-## 为什么不一样？
-
-| | 传统AI教育 | EduApp |
-|---|---|---|
-| **核心逻辑** | 给答案 | 引导你发现答案 |
-| **AI角色** | 老师/工具 | 学习伙伴 |
-| **培养目标** | 知识记忆 | 独立思考力 |
-| **理论基础** | 无 | 苏格拉底方法+建构主义+元认知 |
-| **学习可视化** | 分数/排名 | 思维地图+知识图谱 |
-
-## 功能规划
-
-### MVP (开发中)
-- [x] 方向确定与产品设计
-- [ ] 苏格拉底对话引擎（多学科引导式对话）
-- [ ] 思维发现地图（对话后思考路径可视化）
-- [ ] 知识图谱（学过的概念形成网络）
-- [ ] Landing Page
-- [ ] PWA支持
-
-### 后续计划
-- 自适应难度系统
-- AI伙伴人格选择
-- 家长学习报告
-- 成就与游戏化系统
-- 教师管理后台
-- 多人协作探索
-
-## 技术栈
-
-| 层 | 技术 |
-|---|---|
-| 前端 | React 19 + TypeScript + Vite 6 |
-| 状态管理 | Zustand |
-| 样式 | Tailwind CSS 4 |
-| AI引擎 | Claude API (Anthropic) |
-| 知识图谱可视化 | React Flow |
-| 思维地图 | D3.js |
-| 数据库/Auth | Supabase |
-| 部署 | Vercel |
-
-## 项目文档
-
-| 文档 | 说明 |
-|------|------|
-| [产品设计](docs/PRODUCT.md) | 产品定义、用户画像、用户故事、功能规划 |
-| [方向决策分析](docs/DIRECTION_ANALYSIS.md) | 五方向评估矩阵与推荐理由 |
-| [技术架构](docs/ARCHITECTURE.md) | 对话引擎、知识图谱、数据库设计、API设计 |
-| [教育学理论](docs/PEDAGOGY.md) | 苏格拉底方法、建构主义、ZPD、元认知、布鲁姆分类学 |
-| [用户体验设计](docs/UX_DESIGN.md) | 视觉风格、核心流程、游戏化设计、注意力保持策略 |
-| [增长策略](docs/GROWTH.md) | 获客渠道、转化漏斗、品牌策略、定价 |
-| [风险分析](docs/RISKS.md) | 13项风险评估与应对策略 |
-| [竞品分析](docs/COMPETITORS.md) | 国内外AI教育产品全景分析 |
-| [开发路线图](docs/ROADMAP.md) | 4阶段开发计划与里程碑 |
-
-## 商业模式
-
-| 层级 | 价格 | 内容 |
-|------|------|------|
-| 免费 | ¥0 | 每天3次苏格拉底对话 |
-| 探索者 | ¥29/月 | 无限对话 + 完整功能 |
-| 家庭版 | ¥49/月 | 3个孩子 + 家长报告 |
-| 学校版 | 按协议 | 教师后台 + 学情分析 |
-
-## 项目状态
-
-**方向已确定，MVP开发准备中。**
-
----
-
-*EduApp — 不教知识，教思考。*

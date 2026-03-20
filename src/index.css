@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+@theme {
+  --color-deep-blue: #1A1F36;
+  --color-deep-blue-light: #232842;
+  --color-deep-blue-lighter: #2D3350;
+  --color-wisdom-purple: #7C5CFC;
+  --color-wisdom-purple-light: #9B82FC;
+  --color-growth-green: #34D399;
+  --color-warm-amber: #F59E0B;
+  --color-warm-amber-light: #FBBF24;
+  --color-focus-white: #F8FAFC;
+  --color-muted: #94A3B8;
+  --color-border: #334155;
+  --color-card: #1E2340;
+  --color-card-hover: #252A4A;
+  --color-danger: #EF4444;
+  --color-math: #60A5FA;
+  --color-physics: #F59E0B;
+  --color-chemistry: #34D399;
+  --color-biology: #A78BFA;
+  --color-history: #FB923C;
+  --color-geography: #2DD4BF;
+}
+
+@layer base {
+  body {
+    @apply bg-deep-blue text-focus-white antialiased;
+    font-family: 'Inter', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+    margin: 0;
+  }
+
+  #root {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 3px;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: rgba(30, 35, 64, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(124, 92, 252, 0.1);
+  }
+
+  .glow-amber {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3), 0 0 60px rgba(245, 158, 11, 0.1);
+  }
+
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(124, 92, 252, 0.3), 0 0 60px rgba(124, 92, 252, 0.1);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #F59E0B, #FBBF24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-purple {
+    background: linear-gradient(135deg, #7C5CFC, #9B82FC);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+@keyframes particle-float {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-100px) scale(0); opacity: 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 5px rgba(245, 158, 11, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.6), 0 0 60px rgba(245, 158, 11, 0.2); }
+}
+
+.animate-particle {
+  animation: particle-float 1.5s ease-out forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
