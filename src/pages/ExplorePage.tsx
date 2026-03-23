@@ -12,7 +12,7 @@ import {
   Users,
   Sparkles,
 } from 'lucide-react';
-import { subjects, hotTopics, dialogueScripts } from '../data/dialogues';
+import { subjects, hotTopics, allDialogueScripts } from '../data/dialogues';
 import { useStore } from '../store/useStore';
 
 const iconMap: Record<string, React.ComponentType<{ className?: string; style?: React.CSSProperties }>> = {
@@ -29,7 +29,7 @@ export default function ExplorePage() {
   const startDialogue = useStore((s) => s.startDialogue);
 
   const handleTopicClick = (topic: string) => {
-    const script = dialogueScripts.find((s) => s.question === topic);
+    const script = allDialogueScripts.find((s) => s.question === topic);
     if (script) {
       startDialogue(script);
       navigate('/dialogue');
@@ -38,7 +38,7 @@ export default function ExplorePage() {
 
   const handleHotTopicClick = (topicId?: string) => {
     if (topicId) {
-      const script = dialogueScripts.find((s) => s.id === topicId);
+      const script = allDialogueScripts.find((s) => s.id === topicId);
       if (script) {
         startDialogue(script);
         navigate('/dialogue');
@@ -66,7 +66,7 @@ export default function ExplorePage() {
               const value = (e.target as HTMLInputElement).value.trim();
               if (value) {
                 // Default to the first script as a demo
-                const script = dialogueScripts[0];
+                const script = allDialogueScripts[0];
                 startDialogue(script);
                 navigate('/dialogue');
               }
@@ -113,7 +113,7 @@ export default function ExplorePage() {
             </div>
             <div className="grid md:grid-cols-2 gap-3">
               {subject.topics.map((topic) => {
-                const hasScript = dialogueScripts.some((s) => s.question === topic);
+                const hasScript = allDialogueScripts.some((s) => s.question === topic);
                 return (
                   <motion.button
                     key={topic}

@@ -15,7 +15,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Share2, RotateCcw, Sparkles } from 'lucide-react';
-import { dialogueScripts } from '../data/dialogues';
+import { allDialogueScripts } from '../data/dialogues';
 
 function ConceptNode({ data }: { data: { label: string; discoveredByStudent: boolean } }) {
   return (
@@ -43,7 +43,7 @@ const nodeTypes: NodeTypes = {
 export default function MindMapPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const script = dialogueScripts.find((s) => s.id === id);
+  const script = allDialogueScripts.find((s) => s.id === id);
 
   const initialNodes: Node[] = useMemo(() => {
     if (!script) return [];

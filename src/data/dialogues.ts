@@ -427,20 +427,37 @@ export const dialogueScripts: DialogueScript[] = [
   },
 ];
 
+import { physicsGeoDialogues } from './dialogues-physics-geo';
+import { mathChemDialogues } from './dialogues-math-chem';
+import { bioHistoryDialogues } from './dialogues-bio-history';
+
+export const allDialogueScripts: DialogueScript[] = [
+  ...dialogueScripts,
+  ...physicsGeoDialogues,
+  ...mathChemDialogues,
+  ...bioHistoryDialogues,
+];
+
 export const subjects = [
-  { id: 'math', name: '数学', icon: 'Calculator', color: '#60A5FA', topics: ['为什么0.999...等于1？', '勾股定理是怎么来的？', '负数为什么能相乘得正数？', '概率为什么反直觉？'] },
-  { id: 'physics', name: '物理', icon: 'Atom', color: '#F59E0B', topics: ['为什么月亮不会掉下来？', '为什么天是蓝色的？', '光是波还是粒子？', '为什么冰会浮在水面上？'] },
-  { id: 'chemistry', name: '化学', icon: 'FlaskConical', color: '#34D399', topics: ['为什么铁会生锈？', '水为什么能灭火？', '盐为什么咸？', '化学反应为什么有快有慢？'] },
+  { id: 'math', name: '数学', icon: 'Calculator', color: '#60A5FA', topics: ['为什么0.999...等于1？', '负数相乘为什么得正数？', '勾股定理是怎么来的？', '概率为什么反直觉？', '为什么不能除以零？'] },
+  { id: 'physics', name: '物理', icon: 'Atom', color: '#F59E0B', topics: ['为什么月亮不会掉下来？', '为什么天是蓝色的？', '为什么冰会浮在水面上？', '为什么飞机能飞起来？', '光是波还是粒子？'] },
+  { id: 'chemistry', name: '化学', icon: 'FlaskConical', color: '#34D399', topics: ['为什么铁会生锈？', '水为什么能灭火？', '化学反应为什么有快有慢？'] },
   { id: 'biology', name: '生物', icon: 'Leaf', color: '#A78BFA', topics: ['为什么我们会做梦？', 'DNA如何决定我们的样子？', '为什么要睡觉？', '细胞如何"知道"该做什么？'] },
-  { id: 'history', name: '历史', icon: 'Landmark', color: '#FB923C', topics: ['为什么罗马帝国会衰落？', '丝绸之路改变了什么？', '文艺复兴为什么发生在意大利？', '工业革命为什么发生在英国？'] },
-  { id: 'geography', name: '地理', icon: 'Globe', color: '#2DD4BF', topics: ['为什么会有四季？', '沙漠是怎么形成的？', '为什么地球板块会移动？', '气候变化如何影响人类？'] },
+  { id: 'history', name: '历史', icon: 'Landmark', color: '#FB923C', topics: ['为什么罗马帝国会衰落？', '丝绸之路改变了什么？', '文艺复兴为什么发生在意大利？', '工业革命为什么发生在英国？', '印刷术如何改变世界？'] },
+  { id: 'geography', name: '地理', icon: 'Globe', color: '#2DD4BF', topics: ['为什么会有四季？', '沙漠是怎么形成的？', '为什么地球板块会移动？'] },
 ];
 
 export const hotTopics = [
   { title: '为什么月亮不会掉下来？', subject: '物理', participants: 2847, id: 'physics-moon' },
   { title: '为什么0.999...等于1？', subject: '数学', participants: 2156, id: 'math-infinity' },
   { title: '为什么罗马帝国会衰落？', subject: '历史', participants: 1893, id: 'history-rome' },
-  { title: '为什么天是蓝色的？', subject: '物理', participants: 1654 },
-  { title: 'DNA如何决定我们的样子？', subject: '生物', participants: 1432 },
-  { title: '为什么铁会生锈？', subject: '化学', participants: 1298 },
+  { title: '为什么天是蓝色的？', subject: '物理', participants: 1654, id: 'physics-blue-sky' },
+  { title: 'DNA如何决定我们的样子？', subject: '生物', participants: 1432, id: 'bio-dna' },
+  { title: '为什么铁会生锈？', subject: '化学', participants: 1298, id: 'chem-rust' },
+  { title: '概率为什么反直觉？', subject: '数学', participants: 1187, id: 'math-probability' },
+  { title: '印刷术如何改变世界？', subject: '历史', participants: 1056, id: 'history-printing' },
+  { title: '为什么飞机能飞起来？', subject: '物理', participants: 982, id: 'physics-airplane' },
+  { title: '为什么我们会做梦？', subject: '生物', participants: 943, id: 'bio-dreams' },
+  { title: '为什么会有四季？', subject: '地理', participants: 897, id: 'geo-seasons' },
+  { title: '水为什么能灭火？', subject: '化学', participants: 834, id: 'chem-water-fire' },
 ];
