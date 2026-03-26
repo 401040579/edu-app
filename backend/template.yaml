@@ -1,0 +1,210 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: EduApp Serverless Backend - Socratic Learning Platform
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 30
+    MemorySize: 256
+    Environment:
+      Variables:
+        USERS_TABLE: !Ref EduUsersTable
+        SESSIONS_TABLE: !Ref EduDialogueSessionsTable
+        PROGRESS_TABLE: !Ref EduProgressTable
+        ANTHROPIC_API_KEY_PARAM: /app/anthropic-api-key
+    Architectures:
+      - arm64
+
+Parameters:
+  AllowedOrigins:
+    Type: String
+    Default: "https://rantao.github.io,http://localhost:5173,http://localhost:3000"
+    Description: Comma-separated list of allowed CORS origins
+
+Resources:
+  # ─── API Gateway ─────────────────────────────────────
+  EduApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: prod
+      CorsConfiguration:
+        AllowOrigins:
+          - "https://rantao.github.io"
+          - "http://localhost:5173"
+          - "http://localhost:3000"
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-User-Id
+        MaxAge: 86400
+
+  # ─── DynamoDB Tables ─────────────────────────────────
+  EduUsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: EduUsers
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+
+  EduDialogueSessionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: EduDialogueSessions
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: sessionId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: sessionId
+          KeyType: RANGE
+
+  EduProgressTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: EduProgress
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: conceptId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: conceptId
+          KeyType: RANGE
+
+  # ─── Lambda Functions ───────────────────────────────
+
+  SocraticChatFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/socraticChat/
+      Handler: index.handler
+      Timeout: 60
+      MemorySize: 512
+      Layers:
+        - !Ref SharedLayer
+      Policies:
+        - SSMParameterReadPolicy:
+            ParameterName: app/anthropic-api-key
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EduDialogueSessionsTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EduApi
+            Path: /api/chat
+            Method: POST
+
+  SaveSessionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/saveSession/
+      Handler: index.handler
+      Layers:
+        - !Ref SharedLayer
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EduDialogueSessionsTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EduApi
+            Path: /api/sessions
+            Method: POST
+
+  GetSessionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/getSessions/
+      Handler: index.handler
+      Layers:
+        - !Ref SharedLayer
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref EduDialogueSessionsTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EduApi
+            Path: /api/sessions
+            Method: GET
+
+  UpdateProgressFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/updateProgress/
+      Handler: index.handler
+      Layers:
+        - !Ref SharedLayer
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref EduProgressTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EduApi
+            Path: /api/progress
+            Method: POST
+
+  GetProgressFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/getProgress/
+      Handler: index.handler
+      Layers:
+        - !Ref SharedLayer
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref EduProgressTable
+      Events:
+        Api:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref EduApi
+            Path: /api/progress
+            Method: GET
+
+  # ─── Shared Layer ────────────────────────────────────
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: edu-app-shared
+      Description: Shared utilities for EduApp Lambda functions
+      ContentUri: shared/
+      CompatibleRuntimes:
+        - nodejs20.x
+      CompatibleArchitectures:
+        - arm64
+    Metadata:
+      BuildMethod: makefile
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${EduApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  EduUsersTableName:
+    Value: !Ref EduUsersTable
+  EduDialogueSessionsTableName:
+    Value: !Ref EduDialogueSessionsTable
+  EduProgressTableName:
+    Value: !Ref EduProgressTable

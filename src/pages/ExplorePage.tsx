@@ -65,10 +65,15 @@ export default function ExplorePage() {
             if (e.key === 'Enter') {
               const value = (e.target as HTMLInputElement).value.trim();
               if (value) {
-                // Default to the first script as a demo
-                const script = allDialogueScripts[0];
-                startDialogue(script);
-                navigate('/dialogue');
+                // Check if a scripted dialogue matches
+                const script = allDialogueScripts.find((s) => s.question === value);
+                if (script) {
+                  startDialogue(script);
+                  navigate('/dialogue');
+                } else {
+                  // Use AI mode for free-form topics
+                  navigate(`/dialogue?ai=1&topic=${encodeURIComponent(value)}&subject=${encodeURIComponent('综合')}`);
+                }
               }
             }
           }}

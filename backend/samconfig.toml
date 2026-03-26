@@ -1,0 +1,13 @@
+# Default deployment configuration.
+# Generated for `sam deploy --guided`.
+# Override by running `sam deploy --guided` again.
+
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "edu-app-backend"
+resolve_s3 = true
+s3_prefix = "edu-app-backend"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true

@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, Sparkles, Send, Map } from 'lucide-react';
+import { Lightbulb, Sparkles, Send, Map, Zap, ZapOff } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import AhaEffect from '../components/AhaEffect';
+import { socraticChat, updateProgress, saveSession } from '../api/client';
+import type { ChatMessage } from '../api/client';
 
 const phaseLabels: Record<string, string> = {
   exploration: '探索',
@@ -43,8 +45,357 @@ function TypewriterText({ text, onComplete }: { text: string; onComplete?: () =>
   );
 }
 
+// ─── AI Mode Components ─────────────────────────────
+
+interface AiMessage {
+  id: string;
+  speaker: 'ai' | 'user';
+  content: string;
+  conceptDiscovered?: string | null;
+  isAha?: boolean;
+  phase?: string;
+}
+
+function AiModeDialogue({
+  subject,
+  topic,
+  subjectColor,
+}: {
+  subject: string;
+  topic: string;
+  subjectColor: string;
+}) {
+  const navigate = useNavigate();
+  const [messages, setMessages] = useState<AiMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [aiTypingComplete, setAiTypingComplete] = useState(true);
+  const [showAha, setShowAha] = useState(false);
+  const [ahaConcept, setAhaConcept] = useState('');
+  const [currentPhase, setCurrentPhase] = useState('exploration');
+  const [discoveredConcepts, setDiscoveredConcepts] = useState<string[]>([]);
+  const [suggestedHints, setSuggestedHints] = useState<string[] | null>(null);
+  const [hintIndex, setHintIndex] = useState(0);
+  const [hintText, setHintText] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [sessionId] = useState(() => `session-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const currentPhaseIndex = phaseOrder.indexOf(currentPhase);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
+
+  // Initial AI greeting
+  useEffect(() => {
+    sendToAi(`学生想探索这个话题：${topic}\n\n请开始引导对话。`, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const buildHistory = useCallback((): ChatMessage[] => {
+    return messages.map((m) => ({
+      speaker: m.speaker,
+      content: m.content,
+    }));
+  }, [messages]);
+
+  const sendToAi = useCallback(
+    async (userText: string, isInitial = false) => {
+      setIsLoading(true);
+      setError(null);
+      setAiTypingComplete(false);
+
+      // Add user message (skip for initial greeting)
+      if (!isInitial) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `user-${Date.now()}`,
+            speaker: 'user',
+            content: userText,
+          },
+        ]);
+      }
+
+      try {
+        const history = isInitial ? [] : buildHistory();
+        const response = await socraticChat({
+          subject,
+          topic,
+          userMessage: userText,
+          history,
+        });
+
+        const aiMsg: AiMessage = {
+          id: `ai-${Date.now()}`,
+          speaker: 'ai',
+          content: response.reply,
+          conceptDiscovered: response.conceptDiscovered,
+          isAha: response.isAha,
+          phase: response.phase,
+        };
+
+        setMessages((prev) => [...prev, aiMsg]);
+        setCurrentPhase(response.phase || 'exploration');
+        setSuggestedHints(response.suggestedHints);
+        setHintIndex(0);
+        setHintText(null);
+
+        // Handle concept discovery
+        if (response.conceptDiscovered) {
+          setDiscoveredConcepts((prev) => {
+            if (prev.includes(response.conceptDiscovered!)) return prev;
+            return [...prev, response.conceptDiscovered!];
+          });
+
+          // Show aha effect
+          if (response.isAha) {
+            setTimeout(() => {
+              setShowAha(true);
+              setAhaConcept(response.conceptDiscovered!);
+              setTimeout(() => setShowAha(false), 2500);
+            }, 500);
+          }
+
+          // Save concept progress to backend (fire-and-forget)
+          updateProgress({
+            conceptId: response.conceptDiscovered.replace(/\s+/g, '-').toLowerCase(),
+            conceptName: response.conceptDiscovered,
+            subject,
+            thinkingDepth: response.thinkingDepth,
+            discoveredIn: sessionId,
+          }).catch(() => {
+            // Silently ignore progress save errors
+          });
+        }
+      } catch (err) {
+        console.error('AI chat error:', err);
+        setError(
+          err instanceof Error ? err.message : '无法连接到AI服务，请检查网络连接'
+        );
+        setAiTypingComplete(true);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [buildHistory, subject, topic, sessionId]
+  );
+
+  const handleSend = () => {
+    const text = input.trim();
+    if (!text || isLoading || !aiTypingComplete) return;
+    setInput('');
+    sendToAi(text);
+  };
+
+  const handleHint = () => {
+    if (suggestedHints && hintIndex < suggestedHints.length) {
+      setHintText(suggestedHints[hintIndex]);
+      setHintIndex((prev) => prev + 1);
+    }
+  };
+
+  const handleEndSession = () => {
+    // Save session to backend (fire-and-forget)
+    saveSession({
+      sessionId,
+      subject,
+      topic,
+      messages: messages.map((m) => ({
+        speaker: m.speaker,
+        content: m.content,
+      })),
+      discoveredConcepts,
+      thinkingDepth: 0,
+    }).catch(() => {
+      // Silently ignore save errors
+    });
+    navigate('/explore');
+  };
+
+  const canHint = suggestedHints && hintIndex < suggestedHints.length;
+
+  return (
+    <div className="flex flex-col h-[calc(100dvh-56px)]">
+      <AhaEffect show={showAha} concept={ahaConcept} />
+
+      {/* Phase Indicator */}
+      <div className="px-4 py-3 border-b border-border">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium" style={{ color: subjectColor }}>
+            {subject} -- {topic}
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted">
+              已发现 {discoveredConcepts.length} 个概念
+            </span>
+            <span className="inline-flex items-center gap-1 bg-wisdom-purple/20 text-wisdom-purple text-[10px] px-2 py-0.5 rounded-full">
+              <Zap className="w-3 h-3" />
+              AI
+            </span>
+          </div>
+        </div>
+        <div className="flex gap-1">
+          {phaseOrder.map((phase, i) => (
+            <div key={phase} className="flex-1 flex flex-col items-center gap-1">
+              <div
+                className={`h-1 w-full rounded-full transition-all duration-500 ${
+                  i <= currentPhaseIndex ? 'bg-warm-amber' : 'bg-deep-blue-lighter'
+                }`}
+              />
+              <span
+                className={`text-[10px] ${
+                  i === currentPhaseIndex ? 'text-warm-amber' : 'text-muted/50'
+                }`}
+              >
+                {phaseLabels[phase]}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        <AnimatePresence>
+          {messages.map((msg, i) => (
+            <motion.div
+              key={msg.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className={`flex ${msg.speaker === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                  msg.speaker === 'user'
+                    ? 'bg-wisdom-purple/20 border border-wisdom-purple/30'
+                    : msg.isAha
+                    ? 'bg-card border border-warm-amber/30 animate-pulse-glow'
+                    : 'bg-card border border-border'
+                }`}
+              >
+                {msg.speaker === 'ai' && (
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-warm-amber" />
+                    <span className="text-xs text-warm-amber">思伴 AI</span>
+                  </div>
+                )}
+                <div className="text-sm leading-relaxed whitespace-pre-line">
+                  {msg.speaker === 'ai' && i === messages.length - 1 && !aiTypingComplete ? (
+                    <TypewriterText
+                      text={msg.content}
+                      onComplete={() => setAiTypingComplete(true)}
+                    />
+                  ) : (
+                    msg.content
+                  )}
+                </div>
+                {msg.conceptDiscovered && (
+                  <div className="mt-2 inline-flex items-center gap-1 bg-warm-amber/10 text-warm-amber text-xs px-2 py-1 rounded-full">
+                    <Sparkles className="w-3 h-3" />
+                    发现: {msg.conceptDiscovered}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {/* AI loading indicator */}
+        {isLoading && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
+            <div className="bg-card border border-border rounded-2xl px-4 py-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-warm-amber" />
+                <span className="text-xs text-warm-amber">思伴 AI</span>
+              </div>
+              <div className="flex gap-1">
+                <span className="w-2 h-2 bg-muted rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 bg-muted rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 bg-muted rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Error display */}
+        {error && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-center">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-2 text-sm text-red-400 max-w-[85%]">
+              {error}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Hint display */}
+        {hintText && (
+          <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} className="flex justify-center">
+            <div className="bg-warm-amber/10 border border-warm-amber/20 rounded-xl px-4 py-2 text-sm text-warm-amber max-w-[85%]">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Lightbulb className="w-3.5 h-3.5" />
+                <span className="text-xs font-medium">提示</span>
+              </div>
+              {hintText}
+            </div>
+          </motion.div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input Area */}
+      <div className="border-t border-border p-4 space-y-3">
+        {canHint && aiTypingComplete && !isLoading && (
+          <button
+            onClick={handleHint}
+            className="flex items-center gap-1.5 text-sm text-warm-amber hover:text-warm-amber-light transition-colors"
+          >
+            <Lightbulb className="w-4 h-4" />
+            给我一点提示
+          </button>
+        )}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder={isLoading ? '思伴正在思考...' : '输入你的想法...'}
+            disabled={isLoading || !aiTypingComplete}
+            className="flex-1 bg-deep-blue-lighter border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted focus:outline-none focus:border-warm-amber/50 transition-colors disabled:opacity-50"
+          />
+          <button
+            onClick={handleSend}
+            disabled={isLoading || !input.trim() || !aiTypingComplete}
+            className="bg-warm-amber text-deep-blue rounded-xl px-4 py-3 hover:bg-warm-amber-light transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+        <button
+          onClick={handleEndSession}
+          className="w-full text-center text-xs text-muted hover:text-warm-amber transition-colors py-1"
+        >
+          结束本次对话
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main DialoguePage (with mode switch) ─────────────
+
 export default function DialoguePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const {
     activeDialogue,
     messages,
@@ -58,6 +409,12 @@ export default function DialoguePage() {
     addCompletedDialogue,
   } = useStore();
 
+  // AI mode: enabled via search param ?ai=1, or toggled manually
+  const aiParam = searchParams.get('ai');
+  const aiSubject = searchParams.get('subject') || '';
+  const aiTopic = searchParams.get('topic') || '';
+  const [aiMode, setAiMode] = useState(aiParam === '1');
+
   const [isAiTyping, setIsAiTyping] = useState(false);
   const [showAha, setShowAha] = useState(false);
   const [ahaConcept, setAhaConcept] = useState('');
@@ -67,14 +424,25 @@ export default function DialoguePage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!activeDialogue) {
+    // If not in AI mode and no active dialogue, redirect
+    if (!aiMode && !activeDialogue) {
       navigate('/explore');
     }
-  }, [activeDialogue, navigate]);
+  }, [activeDialogue, navigate, aiMode]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isAiTyping]);
+
+  // ─── AI Mode ────────────────────────────────────────
+  if (aiMode) {
+    const sub = activeDialogue?.subject || aiSubject || '综合';
+    const top = activeDialogue?.title || aiTopic || '自由探索';
+    const color = activeDialogue?.subjectColor || '#F59E0B';
+    return <AiModeDialogue subject={sub} topic={top} subjectColor={color} />;
+  }
+
+  // ─── Script Mode (existing behaviour) ───────────────
 
   const currentStep = activeDialogue?.steps[currentStepIndex];
   const currentPhase = currentStep?.phase || 'exploration';
@@ -83,12 +451,10 @@ export default function DialoguePage() {
   // Get available options for the current user step
   const getOptions = () => {
     if (!activeDialogue || isAiTyping || !aiTypingComplete) return null;
-    // The current step should be a user step with options
     const step = activeDialogue.steps[currentStepIndex];
     if (step?.speaker === 'user' && step.options) {
       return step.options;
     }
-    // Check if the next step is a user step
     const nextStep = activeDialogue.steps[currentStepIndex + 1];
     if (nextStep?.speaker === 'user' && nextStep?.options) {
       return nextStep.options;
@@ -96,10 +462,9 @@ export default function DialoguePage() {
     return null;
   };
 
-  const handleSelectOption = useCallback((option: string) => {
+  const handleSelectOption = (option: string) => {
     if (!activeDialogue || isAiTyping) return;
 
-    // Find the current user step
     let userStepIndex = currentStepIndex;
     if (activeDialogue.steps[currentStepIndex]?.speaker !== 'user') {
       userStepIndex = currentStepIndex + 1;
@@ -109,7 +474,6 @@ export default function DialoguePage() {
     const nextAiStepIndex = userStepIndex + 1;
     const nextAiStep = activeDialogue.steps[nextAiStepIndex];
 
-    // Add user message
     addMessage({
       id: `user-${Date.now()}`,
       speaker: 'user',
@@ -117,7 +481,6 @@ export default function DialoguePage() {
       conceptDiscovered: userStep?.conceptDiscovered,
     });
 
-    // Show aha effect if concept discovered
     if (userStep?.conceptDiscovered) {
       setTimeout(() => {
         setShowAha(true);
@@ -127,7 +490,6 @@ export default function DialoguePage() {
     }
 
     if (nextAiStep && nextAiStep.speaker === 'ai') {
-      // Show AI typing then reveal message
       setIsAiTyping(true);
       setAiTypingComplete(false);
       setTimeout(() => {
@@ -140,7 +502,6 @@ export default function DialoguePage() {
           conceptDiscovered: nextAiStep.conceptDiscovered,
         });
 
-        // Show aha for AI step discoveries
         if (nextAiStep.isAha && nextAiStep.conceptDiscovered) {
           setTimeout(() => {
             setShowAha(true);
@@ -149,24 +510,21 @@ export default function DialoguePage() {
           }, 1000);
         }
 
-        // Move to the step after the AI step
         const stepAfterAi = nextAiStepIndex + 1;
         if (stepAfterAi < activeDialogue.steps.length) {
           useStore.setState({ currentStepIndex: stepAfterAi });
         } else {
-          // Dialogue complete
           completeDialogue();
           addCompletedDialogue(activeDialogue.id);
         }
       }, 1200 + Math.random() * 800);
     } else {
-      // No more steps
       completeDialogue();
       addCompletedDialogue(activeDialogue.id);
     }
 
     setHintText(null);
-  }, [activeDialogue, currentStepIndex, isAiTyping, addMessage, completeDialogue, addCompletedDialogue]);
+  };
 
   const handleHint = () => {
     const hint = requestHint();
@@ -193,9 +551,20 @@ export default function DialoguePage() {
           <span className="text-sm font-medium" style={{ color: activeDialogue.subjectColor }}>
             {activeDialogue.subject} -- {activeDialogue.title}
           </span>
-          <span className="text-xs text-muted">
-            已发现 {discoveredConcepts.length}/{activeDialogue.targetConcepts.length} 个概念
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted">
+              已发现 {discoveredConcepts.length}/{activeDialogue.targetConcepts.length} 个概念
+            </span>
+            {/* AI Mode Toggle */}
+            <button
+              onClick={() => setAiMode(true)}
+              className="inline-flex items-center gap-1 text-[10px] text-muted hover:text-wisdom-purple border border-border hover:border-wisdom-purple/50 px-2 py-0.5 rounded-full transition-colors"
+              title="切换到真实AI模式"
+            >
+              <Zap className="w-3 h-3" />
+              AI模式
+            </button>
+          </div>
         </div>
         <div className="flex gap-1">
           {phaseOrder.map((phase, i) => (
@@ -337,8 +706,6 @@ export default function DialoguePage() {
               >
                 <Lightbulb className="w-4 h-4" />
                 {hintLevel === 0 ? '给我一点提示' : hintLevel === 1 ? '再给一点提示' : '最后提示'}
-                {' '}
-                {'💡'.repeat(hintLevel + 1)}
               </button>
             )}
             <div className="flex flex-col gap-2">
