@@ -1,23 +1,25 @@
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Compass, Network, BarChart3, Trophy, ArrowLeft } from 'lucide-react';
+import { Home, Compass, Network, BarChart3, Trophy, ArrowLeft, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const navItems = [
-  { path: '/', icon: Home, label: '首页' },
-  { path: '/explore', icon: Compass, label: '探索' },
-  { path: '/knowledge', icon: Network, label: '图谱' },
-  { path: '/dashboard', icon: BarChart3, label: '数据' },
-  { path: '/achievements', icon: Trophy, label: '成就' },
-];
+import { useI18n } from '../i18n';
 
 export default function Layout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t, locale, toggleLocale } = useI18n();
   const isDialogue = location.pathname.startsWith('/dialogue');
   const isMindMap = location.pathname.startsWith('/mindmap');
   const isLanding = location.pathname === '/';
   const hideNav = isDialogue || isMindMap;
+
+  const navItems = [
+    { path: '/', icon: Home, label: t('nav.home') },
+    { path: '/explore', icon: Compass, label: t('nav.explore') },
+    { path: '/knowledge', icon: Network, label: t('nav.graph') },
+    { path: '/dashboard', icon: BarChart3, label: t('nav.data') },
+    { path: '/achievements', icon: Trophy, label: t('nav.achievements') },
+  ];
 
   return (
     <div className="flex flex-col min-h-dvh">
@@ -30,9 +32,16 @@ export default function Layout({ children }: { children: ReactNode }) {
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <span className="text-sm text-muted">
-            {isDialogue ? '苏格拉底对话' : '思维发现地图'}
+          <span className="text-sm text-muted flex-1">
+            {isDialogue ? t('nav.socraticDialogue') : t('nav.mindDiscoveryMap')}
           </span>
+          <button
+            onClick={toggleLocale}
+            className="flex items-center gap-1 text-xs text-muted hover:text-focus-white border border-border rounded-full px-2.5 py-1 transition-colors"
+          >
+            <Globe className="w-3 h-3" />
+            {locale === 'en' ? 'CN' : 'EN'}
+          </button>
         </header>
       )}
 

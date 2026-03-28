@@ -1,19 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, Sparkles, Send, Map, Zap, ZapOff } from 'lucide-react';
+import { Lightbulb, Sparkles, Send, Map, Zap } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import AhaEffect from '../components/AhaEffect';
 import { socraticChat, updateProgress, saveSession } from '../api/client';
 import type { ChatMessage } from '../api/client';
-
-const phaseLabels: Record<string, string> = {
-  exploration: '探索',
-  scaffolding: '搭建',
-  guided_discovery: '发现',
-  consolidation: '巩固',
-  reflection: '反思',
-};
+import { useI18n } from '../i18n';
 
 const phaseOrder = ['exploration', 'scaffolding', 'guided_discovery', 'consolidation', 'reflection'];
 
@@ -66,6 +59,7 @@ function AiModeDialogue({
   subjectColor: string;
 }) {
   const navigate = useNavigate();
+  const { t, locale } = useI18n();
   const [messages, setMessages] = useState<AiMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -90,7 +84,10 @@ function AiModeDialogue({
 
   // Initial AI greeting
   useEffect(() => {
-    sendToAi(`学生想探索这个话题：${topic}\n\n请开始引导对话。`, true);
+    const greeting = locale === 'zh'
+      ? `学生想探索这个话题：${topic}\n\n请开始引导对话。`
+      : `The student wants to explore this topic: ${topic}\n\nPlease begin the guided dialogue.`;
+    sendToAi(greeting, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -173,14 +170,14 @@ function AiModeDialogue({
       } catch (err) {
         console.error('AI chat error:', err);
         setError(
-          err instanceof Error ? err.message : '无法连接到AI服务，请检查网络连接'
+          err instanceof Error ? err.message : t('dialogue.aiError')
         );
         setAiTypingComplete(true);
       } finally {
         setIsLoading(false);
       }
     },
-    [buildHistory, subject, topic, sessionId]
+    [buildHistory, subject, topic, sessionId, t, locale]
   );
 
   const handleSend = () => {
@@ -229,7 +226,7 @@ function AiModeDialogue({
           </span>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted">
-              已发现 {discoveredConcepts.length} 个概念
+              {t('dialogue.discoveredConcepts', { count: discoveredConcepts.length })}
             </span>
             <span className="inline-flex items-center gap-1 bg-wisdom-purple/20 text-wisdom-purple text-[10px] px-2 py-0.5 rounded-full">
               <Zap className="w-3 h-3" />
@@ -250,7 +247,7 @@ function AiModeDialogue({
                   i === currentPhaseIndex ? 'text-warm-amber' : 'text-muted/50'
                 }`}
               >
-                {phaseLabels[phase]}
+                {t(`dialogue.phases.${phase}`)}
               </span>
             </div>
           ))}
@@ -280,7 +277,7 @@ function AiModeDialogue({
                 {msg.speaker === 'ai' && (
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-warm-amber" />
-                    <span className="text-xs text-warm-amber">思伴 AI</span>
+                    <span className="text-xs text-warm-amber">{t('dialogue.aiLabel')}</span>
                   </div>
                 )}
                 <div className="text-sm leading-relaxed whitespace-pre-line">
@@ -296,7 +293,7 @@ function AiModeDialogue({
                 {msg.conceptDiscovered && (
                   <div className="mt-2 inline-flex items-center gap-1 bg-warm-amber/10 text-warm-amber text-xs px-2 py-1 rounded-full">
                     <Sparkles className="w-3 h-3" />
-                    发现: {msg.conceptDiscovered}
+                    {t('dialogue.discovered')} {msg.conceptDiscovered}
                   </div>
                 )}
               </div>
@@ -310,7 +307,7 @@ function AiModeDialogue({
             <div className="bg-card border border-border rounded-2xl px-4 py-3">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-warm-amber" />
-                <span className="text-xs text-warm-amber">思伴 AI</span>
+                <span className="text-xs text-warm-amber">{t('dialogue.aiLabel')}</span>
               </div>
               <div className="flex gap-1">
                 <span className="w-2 h-2 bg-muted rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -336,7 +333,7 @@ function AiModeDialogue({
             <div className="bg-warm-amber/10 border border-warm-amber/20 rounded-xl px-4 py-2 text-sm text-warm-amber max-w-[85%]">
               <div className="flex items-center gap-1.5 mb-1">
                 <Lightbulb className="w-3.5 h-3.5" />
-                <span className="text-xs font-medium">提示</span>
+                <span className="text-xs font-medium">{t('dialogue.hintLabel')}</span>
               </div>
               {hintText}
             </div>
@@ -354,7 +351,7 @@ function AiModeDialogue({
             className="flex items-center gap-1.5 text-sm text-warm-amber hover:text-warm-amber-light transition-colors"
           >
             <Lightbulb className="w-4 h-4" />
-            给我一点提示
+            {t('dialogue.giveHint')}
           </button>
         )}
         <div className="flex gap-2">
@@ -368,7 +365,7 @@ function AiModeDialogue({
                 handleSend();
               }
             }}
-            placeholder={isLoading ? '思伴正在思考...' : '输入你的想法...'}
+            placeholder={isLoading ? t('dialogue.aiThinking') : t('dialogue.inputPlaceholder')}
             disabled={isLoading || !aiTypingComplete}
             className="flex-1 bg-deep-blue-lighter border border-border rounded-xl px-4 py-3 text-sm placeholder:text-muted focus:outline-none focus:border-warm-amber/50 transition-colors disabled:opacity-50"
           />
@@ -384,7 +381,7 @@ function AiModeDialogue({
           onClick={handleEndSession}
           className="w-full text-center text-xs text-muted hover:text-warm-amber transition-colors py-1"
         >
-          结束本次对话
+          {t('dialogue.endSession')}
         </button>
       </div>
     </div>
@@ -396,6 +393,7 @@ function AiModeDialogue({
 export default function DialoguePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t } = useI18n();
   const {
     activeDialogue,
     messages,
@@ -436,8 +434,8 @@ export default function DialoguePage() {
 
   // ─── AI Mode ────────────────────────────────────────
   if (aiMode) {
-    const sub = activeDialogue?.subject || aiSubject || '综合';
-    const top = activeDialogue?.title || aiTopic || '自由探索';
+    const sub = activeDialogue?.subject || aiSubject || t('explore.generalSubject');
+    const top = activeDialogue?.title || aiTopic || t('dialogue.freeExplore');
     const color = activeDialogue?.subjectColor || '#F59E0B';
     return <AiModeDialogue subject={sub} topic={top} subjectColor={color} />;
   }
@@ -553,16 +551,19 @@ export default function DialoguePage() {
           </span>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted">
-              已发现 {discoveredConcepts.length}/{activeDialogue.targetConcepts.length} 个概念
+              {t('dialogue.discoveredConceptsOf', {
+                count: discoveredConcepts.length,
+                total: activeDialogue.targetConcepts.length,
+              })}
             </span>
             {/* AI Mode Toggle */}
             <button
               onClick={() => setAiMode(true)}
               className="inline-flex items-center gap-1 text-[10px] text-muted hover:text-wisdom-purple border border-border hover:border-wisdom-purple/50 px-2 py-0.5 rounded-full transition-colors"
-              title="切换到真实AI模式"
+              title={t('dialogue.switchToAiMode')}
             >
               <Zap className="w-3 h-3" />
-              AI模式
+              {t('dialogue.aiMode')}
             </button>
           </div>
         </div>
@@ -581,7 +582,7 @@ export default function DialoguePage() {
                   i === currentPhaseIndex ? 'text-warm-amber' : 'text-muted/50'
                 }`}
               >
-                {phaseLabels[phase]}
+                {t(`dialogue.phases.${phase}`)}
               </span>
             </div>
           ))}
@@ -611,7 +612,7 @@ export default function DialoguePage() {
                 {msg.speaker === 'ai' && (
                   <div className="flex items-center gap-1.5 mb-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-warm-amber" />
-                    <span className="text-xs text-warm-amber">思伴</span>
+                    <span className="text-xs text-warm-amber">{t('dialogue.scriptLabel')}</span>
                   </div>
                 )}
                 <div className="text-sm leading-relaxed whitespace-pre-line">
@@ -627,7 +628,7 @@ export default function DialoguePage() {
                 {msg.conceptDiscovered && (
                   <div className="mt-2 inline-flex items-center gap-1 bg-warm-amber/10 text-warm-amber text-xs px-2 py-1 rounded-full">
                     <Sparkles className="w-3 h-3" />
-                    发现: {msg.conceptDiscovered}
+                    {t('dialogue.discovered')} {msg.conceptDiscovered}
                   </div>
                 )}
               </div>
@@ -645,7 +646,7 @@ export default function DialoguePage() {
             <div className="bg-card border border-border rounded-2xl px-4 py-3">
               <div className="flex items-center gap-1.5 mb-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-warm-amber" />
-                <span className="text-xs text-warm-amber">思伴</span>
+                <span className="text-xs text-warm-amber">{t('dialogue.scriptLabel')}</span>
               </div>
               <div className="flex gap-1">
                 <span className="w-2 h-2 bg-muted rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -666,7 +667,7 @@ export default function DialoguePage() {
             <div className="bg-warm-amber/10 border border-warm-amber/20 rounded-xl px-4 py-2 text-sm text-warm-amber max-w-[85%]">
               <div className="flex items-center gap-1.5 mb-1">
                 <Lightbulb className="w-3.5 h-3.5" />
-                <span className="text-xs font-medium">提示 {hintLevel}/3</span>
+                <span className="text-xs font-medium">{t('dialogue.hintLabelN', { level: hintLevel })}</span>
               </div>
               {hintText}
             </div>
@@ -685,13 +686,13 @@ export default function DialoguePage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center space-y-3"
           >
-            <p className="text-sm text-muted">对话结束！你发现了 {discoveredConcepts.length} 个概念</p>
+            <p className="text-sm text-muted">{t('dialogue.dialogueComplete', { count: discoveredConcepts.length })}</p>
             <button
               onClick={() => navigate(`/mindmap/${activeDialogue.id}`)}
               className="inline-flex items-center gap-2 bg-warm-amber text-deep-blue font-semibold px-6 py-3 rounded-xl hover:bg-warm-amber-light transition-colors"
             >
               <Map className="w-4 h-4" />
-              查看思维发现地图
+              {t('dialogue.viewMindMap')}
             </button>
           </motion.div>
         )}
@@ -705,7 +706,7 @@ export default function DialoguePage() {
                 className="flex items-center gap-1.5 text-sm text-warm-amber hover:text-warm-amber-light transition-colors"
               >
                 <Lightbulb className="w-4 h-4" />
-                {hintLevel === 0 ? '给我一点提示' : hintLevel === 1 ? '再给一点提示' : '最后提示'}
+                {hintLevel === 0 ? t('dialogue.giveHint') : hintLevel === 1 ? t('dialogue.moreHint') : t('dialogue.lastHint')}
               </button>
             )}
             <div className="flex flex-col gap-2">

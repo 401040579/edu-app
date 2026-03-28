@@ -10,8 +10,11 @@ import {
   X,
   ArrowRight,
   Star,
+  Globe,
 } from 'lucide-react';
+import { useI18n } from '../i18n';
 
+// Demo conversation kept in Chinese (educational content)
 const demoConversation = [
   { speaker: 'user', text: '为什么月亮不会掉下来？' },
   { speaker: 'ai', text: '好问题！你觉得月亮在天上是静止的，还是在做某种运动？' },
@@ -29,74 +32,47 @@ const demoConversation = [
   },
 ];
 
-const comparisonData = [
-  {
-    feature: '当学生问问题时',
-    traditional: '直接给出答案',
-    eduapp: '用提问引导自己发现',
-  },
-  {
-    feature: '学习过程',
-    traditional: '被动接受信息',
-    eduapp: '主动探索建构知识',
-  },
-  {
-    feature: '思维能力',
-    traditional: '记住答案',
-    eduapp: '学会如何思考',
-  },
-  {
-    feature: '学习记录',
-    traditional: '做题数量/正确率',
-    eduapp: '思维地图/知识图谱',
-  },
-  {
-    feature: '学习动力',
-    traditional: '分数和排名',
-    eduapp: '发现的喜悦和成长可见',
-  },
-];
-
-const plans = [
-  {
-    name: '免费版',
-    price: '¥0',
-    period: '',
-    features: ['每天3次对话', '基础学科（数学、物理、化学）', '基础思维地图'],
-    highlighted: false,
-  },
-  {
-    name: '探索者',
-    price: '¥29',
-    period: '/月',
-    features: [
-      '无限对话',
-      '所有学科',
-      '完整知识图谱',
-      '学习数据分析',
-      'AI伙伴人格选择',
-    ],
-    highlighted: true,
-  },
-  {
-    name: '家庭版',
-    price: '¥49',
-    period: '/月',
-    features: [
-      '最多3个孩子账号',
-      '家长学习报告',
-      '亲子共同探索模式',
-      '所有探索者功能',
-    ],
-    highlighted: false,
-  },
-];
-
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { t, locale, toggleLocale, translations } = useI18n();
+
+  const features = [
+    {
+      icon: MessageCircle,
+      title: t('landing.featureSocratic'),
+      desc: t('landing.featureSocraticDesc'),
+      color: 'text-warm-amber',
+    },
+    {
+      icon: Brain,
+      title: t('landing.featureMindMap'),
+      desc: t('landing.featureMindMapDesc'),
+      color: 'text-wisdom-purple',
+    },
+    {
+      icon: Network,
+      title: t('landing.featureKnowledgeGraph'),
+      desc: t('landing.featureKnowledgeGraphDesc'),
+      color: 'text-growth-green',
+    },
+  ];
+
+  const comparisonData = translations.landing.comparisonFeatures;
+  const plans = translations.landing.plans;
 
   return (
     <div className="min-h-dvh">
+      {/* Language Switcher - floating top right */}
+      <div className="fixed top-4 right-4 z-50">
+        <button
+          onClick={toggleLocale}
+          className="flex items-center gap-1.5 bg-deep-blue-light border border-border rounded-full px-3 py-1.5 text-sm text-muted hover:text-focus-white transition-colors"
+        >
+          <Globe className="w-3.5 h-3.5" />
+          {locale === 'en' ? '中文' : 'EN'}
+        </button>
+      </div>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden px-6 pt-16 pb-20">
         {/* Background glow */}
@@ -112,27 +88,25 @@ export default function LandingPage() {
           >
             <div className="inline-flex items-center gap-2 bg-deep-blue-light border border-border rounded-full px-4 py-2 mb-8">
               <Sparkles className="w-4 h-4 text-warm-amber" />
-              <span className="text-sm text-muted">AI苏格拉底式学习伙伴</span>
+              <span className="text-sm text-muted">{t('landing.badge')}</span>
             </div>
 
             <h1 className="text-5xl md:text-7xl font-bold mb-2">
-              <span className="text-gradient">思伴</span>
+              <span className="text-gradient">{t('landing.heroTitle')}</span>
             </h1>
-            <p className="text-lg text-muted mb-4">EduApp</p>
+            <p className="text-lg text-muted mb-4">{t('landing.heroSubtitle')}</p>
             <h2 className="text-2xl md:text-3xl font-medium text-focus-white mb-6">
-              不给答案，给你思考的超能力
+              {t('landing.heroHeadline')}
             </h2>
-            <p className="text-lg text-muted max-w-2xl mx-auto mb-10">
-              在AI时代，最珍贵的能力不是获取答案，而是提出好问题。
-              <br />
-              思伴通过苏格拉底式对话，引导你自己发现答案、构建真正的思维能力。
+            <p className="text-lg text-muted max-w-2xl mx-auto mb-10 whitespace-pre-line">
+              {t('landing.heroDescription')}
             </p>
 
             <button
               onClick={() => navigate('/explore')}
               className="inline-flex items-center gap-2 bg-warm-amber hover:bg-warm-amber-light text-deep-blue font-semibold px-8 py-4 rounded-2xl text-lg transition-all glow-amber hover:scale-105"
             >
-              开始思考之旅
+              {t('landing.ctaButton')}
               <ArrowRight className="w-5 h-5" />
             </button>
           </motion.div>
@@ -143,26 +117,7 @@ export default function LandingPage() {
       <section className="px-6 py-16">
         <div className="max-w-4xl mx-auto">
           <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: MessageCircle,
-                title: '苏格拉底对话',
-                desc: '永远不直接给答案，通过提问引导你自己发现真理',
-                color: 'text-warm-amber',
-              },
-              {
-                icon: Brain,
-                title: '思维发现地图',
-                desc: '可视化你的思考路径，看见自己的思维成长',
-                color: 'text-wisdom-purple',
-              },
-              {
-                icon: Network,
-                title: '知识图谱',
-                desc: '探索过的知识形成网络，看见自己的知识宇宙',
-                color: 'text-growth-green',
-              },
-            ].map((feature, i) => (
+            {features.map((feature, i) => (
               <motion.div
                 key={feature.title}
                 initial={{ opacity: 0, y: 20 }}
@@ -189,10 +144,10 @@ export default function LandingPage() {
             viewport={{ once: true }}
           >
             <h2 className="text-2xl font-bold text-center mb-2">
-              体验苏格拉底式对话
+              {t('landing.demoTitle')}
             </h2>
             <p className="text-muted text-center mb-10">
-              看看思伴如何引导学生自己发现万有引力的奥秘
+              {t('landing.demoSubtitle')}
             </p>
           </motion.div>
 
@@ -216,7 +171,7 @@ export default function LandingPage() {
                   {msg.speaker === 'ai' && (
                     <div className="flex items-center gap-1.5 mb-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-warm-amber" />
-                      <span className="text-xs text-warm-amber">思伴</span>
+                      <span className="text-xs text-warm-amber">{t('common.brandName')}</span>
                     </div>
                   )}
                   <p className="text-sm leading-relaxed">{msg.text}</p>
@@ -230,7 +185,7 @@ export default function LandingPage() {
               onClick={() => navigate('/explore')}
               className="inline-flex items-center gap-2 text-warm-amber hover:text-warm-amber-light transition-colors"
             >
-              亲自体验完整对话
+              {t('landing.demoCtaLink')}
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -241,20 +196,20 @@ export default function LandingPage() {
       <section className="px-6 py-16">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-2">
-            与传统AI教育的区别
+            {t('landing.comparisonTitle')}
           </h2>
           <p className="text-muted text-center mb-10">
-            大多数AI教育产品帮你获取答案，思伴帮你学会思考
+            {t('landing.comparisonSubtitle')}
           </p>
 
           <div className="bg-card border border-border rounded-2xl overflow-hidden">
             <div className="grid grid-cols-3 border-b border-border">
               <div className="p-4 text-sm text-muted"></div>
               <div className="p-4 text-sm text-center text-muted border-x border-border">
-                传统AI教育
+                {t('landing.comparisonTraditional')}
               </div>
               <div className="p-4 text-sm text-center text-warm-amber font-medium">
-                思伴 EduApp
+                {t('landing.comparisonEduApp')}
               </div>
             </div>
             {comparisonData.map((row, i) => (
@@ -280,53 +235,58 @@ export default function LandingPage() {
       {/* Pricing */}
       <section className="px-6 py-16 bg-deep-blue-light/50">
         <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-2">选择你的思考之旅</h2>
+          <h2 className="text-2xl font-bold text-center mb-2">{t('landing.pricingTitle')}</h2>
           <p className="text-muted text-center mb-10">
-            从免费开始，随时升级解锁更多功能
+            {t('landing.pricingSubtitle')}
           </p>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {plans.map((plan) => (
-              <motion.div
-                key={plan.name}
-                whileHover={{ y: -4 }}
-                className={`rounded-2xl p-6 ${
-                  plan.highlighted
-                    ? 'bg-card border-2 border-warm-amber glow-amber'
-                    : 'bg-card border border-border'
-                }`}
-              >
-                {plan.highlighted && (
-                  <div className="flex items-center gap-1 text-warm-amber text-xs font-medium mb-3">
-                    <Star className="w-3 h-3" />
-                    最受欢迎
-                  </div>
-                )}
-                <h3 className="text-lg font-semibold mb-1">{plan.name}</h3>
-                <div className="flex items-baseline gap-1 mb-6">
-                  <span className="text-3xl font-bold">{plan.price}</span>
-                  <span className="text-sm text-muted">{plan.period}</span>
-                </div>
-                <ul className="space-y-3 mb-6">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2 text-sm">
-                      <Check className="w-4 h-4 text-growth-green shrink-0" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => navigate('/explore')}
-                  className={`w-full py-3 rounded-xl font-medium transition-colors ${
-                    plan.highlighted
-                      ? 'bg-warm-amber text-deep-blue hover:bg-warm-amber-light'
-                      : 'bg-deep-blue-lighter text-focus-white hover:bg-deep-blue-light border border-border'
+            {plans.map((plan, idx) => {
+              const highlighted = idx === 1;
+              return (
+                <motion.div
+                  key={plan.name}
+                  whileHover={{ y: -4 }}
+                  className={`rounded-2xl p-6 ${
+                    highlighted
+                      ? 'bg-card border-2 border-warm-amber glow-amber'
+                      : 'bg-card border border-border'
                   }`}
                 >
-                  {plan.price === '¥0' ? '免费体验' : '开始试用'}
-                </button>
-              </motion.div>
-            ))}
+                  {highlighted && (
+                    <div className="flex items-center gap-1 text-warm-amber text-xs font-medium mb-3">
+                      <Star className="w-3 h-3" />
+                      {t('landing.mostPopular')}
+                    </div>
+                  )}
+                  <h3 className="text-lg font-semibold mb-1">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1 mb-6">
+                    <span className="text-3xl font-bold">{plan.price}</span>
+                    <span className="text-sm text-muted">{plan.period}</span>
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm">
+                        <Check className="w-4 h-4 text-growth-green shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => navigate('/explore')}
+                    className={`w-full py-3 rounded-xl font-medium transition-colors ${
+                      highlighted
+                        ? 'bg-warm-amber text-deep-blue hover:bg-warm-amber-light'
+                        : 'bg-deep-blue-lighter text-focus-white hover:bg-deep-blue-light border border-border'
+                    }`}
+                  >
+                    {idx === 0
+                      ? t('landing.freeExperience')
+                      : t('landing.startTrial')}
+                  </button>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -335,18 +295,18 @@ export default function LandingPage() {
       <section className="px-6 py-20">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">
-            准备好开始你的
-            <span className="text-gradient"> 思考之旅 </span>
-            了吗？
+            {t('landing.ctaTitle_1')}
+            <span className="text-gradient">{t('landing.ctaTitle_highlight')}</span>
+            {t('landing.ctaTitle_2')}
           </h2>
           <p className="text-muted mb-8">
-            2400年前，苏格拉底用提问改变了世界。今天，让AI伙伴用同样的方式改变你的学习。
+            {t('landing.ctaDescription')}
           </p>
           <button
             onClick={() => navigate('/explore')}
             className="inline-flex items-center gap-2 bg-warm-amber hover:bg-warm-amber-light text-deep-blue font-semibold px-8 py-4 rounded-2xl text-lg transition-all glow-amber hover:scale-105"
           >
-            开始思考之旅
+            {t('landing.ctaButtonBottom')}
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>
@@ -355,8 +315,8 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-border px-6 py-8">
         <div className="max-w-4xl mx-auto text-center text-sm text-muted">
-          <p>思伴 EduApp -- AI苏格拉底式学习伙伴</p>
-          <p className="mt-1">不给答案，给你思考的超能力</p>
+          <p>{t('landing.footerLine1')}</p>
+          <p className="mt-1">{t('landing.footerLine2')}</p>
         </div>
       </footer>
     </div>

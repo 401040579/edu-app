@@ -12,60 +12,64 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { dashboardStats, depthTrend, achievements } from '../data/mockData';
-
-const statCards = [
-  {
-    label: '探索主题',
-    value: dashboardStats.totalTopics,
-    icon: BookOpen,
-    color: '#60A5FA',
-  },
-  {
-    label: '对话轮次',
-    value: dashboardStats.totalDialogues,
-    icon: MessageCircle,
-    color: '#7C5CFC',
-  },
-  {
-    label: '发现概念',
-    value: dashboardStats.totalConcepts,
-    icon: Lightbulb,
-    color: '#F59E0B',
-  },
-  {
-    label: '思维深度',
-    value: dashboardStats.thinkingDepth,
-    icon: Brain,
-    color: '#34D399',
-    suffix: '/10',
-  },
-  {
-    label: '连续天数',
-    value: dashboardStats.streakDays,
-    icon: Flame,
-    color: '#FB923C',
-    suffix: '天',
-  },
-  {
-    label: '学习时长',
-    value: Math.round(dashboardStats.totalMinutes / 60),
-    icon: Clock,
-    color: '#2DD4BF',
-    suffix: '小时',
-  },
-];
+import { useI18n } from '../i18n';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { t, translations } = useI18n();
   const maxScore = Math.max(...depthTrend.map((d) => d.score));
   const earnedBadges = achievements.filter((a) => a.earned);
+
+  const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+
+  const statCards = [
+    {
+      label: t('dashboard.stats.totalTopics'),
+      value: dashboardStats.totalTopics,
+      icon: BookOpen,
+      color: '#60A5FA',
+    },
+    {
+      label: t('dashboard.stats.totalDialogues'),
+      value: dashboardStats.totalDialogues,
+      icon: MessageCircle,
+      color: '#7C5CFC',
+    },
+    {
+      label: t('dashboard.stats.totalConcepts'),
+      value: dashboardStats.totalConcepts,
+      icon: Lightbulb,
+      color: '#F59E0B',
+    },
+    {
+      label: t('dashboard.stats.thinkingDepth'),
+      value: dashboardStats.thinkingDepth,
+      icon: Brain,
+      color: '#34D399',
+      suffix: '/10',
+    },
+    {
+      label: t('dashboard.stats.streakDays'),
+      value: dashboardStats.streakDays,
+      icon: Flame,
+      color: '#FB923C',
+      suffix: t('dashboard.suffixDays'),
+    },
+    {
+      label: t('dashboard.stats.totalMinutes'),
+      value: Math.round(dashboardStats.totalMinutes / 60),
+      icon: Clock,
+      color: '#2DD4BF',
+      suffix: t('dashboard.suffixHours'),
+    },
+  ];
 
   return (
     <div className="pb-24 px-4 max-w-4xl mx-auto">
       {/* Header */}
       <div className="pt-8 pb-6">
-        <h1 className="text-2xl font-bold mb-1">学习仪表盘</h1>
-        <p className="text-muted text-sm">你的思维成长一目了然</p>
+        <h1 className="text-2xl font-bold mb-1">{t('dashboard.title')}</h1>
+        <p className="text-muted text-sm">{t('dashboard.subtitle')}</p>
       </div>
 
       {/* Stat Cards */}
@@ -96,12 +100,13 @@ export default function DashboardPage() {
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-5 h-5 text-warm-amber" />
-          <h2 className="text-lg font-semibold">思维深度趋势</h2>
+          <h2 className="text-lg font-semibold">{t('dashboard.depthTrend')}</h2>
         </div>
         <div className="bg-card border border-border rounded-2xl p-6">
           <div className="flex items-end gap-3 h-40">
             {depthTrend.map((d, i) => {
               const height = (d.score / maxScore) * 100;
+              const dayKey = dayKeys[i];
               return (
                 <motion.div
                   key={d.day}
@@ -119,7 +124,7 @@ export default function DashboardPage() {
                       minHeight: 4,
                     }}
                   />
-                  <span className="text-xs text-muted">{d.day}</span>
+                  <span className="text-xs text-muted">{t(`dashboard.days.${dayKey}`)}</span>
                 </motion.div>
               );
             })}
@@ -132,30 +137,34 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Trophy className="w-5 h-5 text-warm-amber" />
-            <h2 className="text-lg font-semibold">成就徽章</h2>
+            <h2 className="text-lg font-semibold">{t('dashboard.achievementBadges')}</h2>
           </div>
           <button
             onClick={() => navigate('/achievements')}
             className="text-sm text-warm-amber hover:text-warm-amber-light"
           >
-            查看全部
+            {t('common.viewAll')}
           </button>
         </div>
         <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
-          {earnedBadges.map((badge) => (
-            <motion.div
-              key={badge.id}
-              whileHover={{ scale: 1.1 }}
-              className="flex flex-col items-center gap-2 bg-card border border-warm-amber/20 rounded-2xl p-3"
-            >
-              <div className="w-10 h-10 rounded-full bg-warm-amber/20 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-warm-amber" />
-              </div>
-              <span className="text-[10px] text-center text-muted leading-tight">
-                {badge.name}
-              </span>
-            </motion.div>
-          ))}
+          {earnedBadges.map((badge) => {
+            const itemKey = badge.id as keyof typeof translations.achievements.items;
+            const translatedName = translations.achievements.items[itemKey]?.name || badge.name;
+            return (
+              <motion.div
+                key={badge.id}
+                whileHover={{ scale: 1.1 }}
+                className="flex flex-col items-center gap-2 bg-card border border-warm-amber/20 rounded-2xl p-3"
+              >
+                <div className="w-10 h-10 rounded-full bg-warm-amber/20 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-warm-amber" />
+                </div>
+                <span className="text-[10px] text-center text-muted leading-tight">
+                  {translatedName}
+                </span>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
 
@@ -167,12 +176,12 @@ export default function DashboardPage() {
       >
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-5 h-5 text-warm-amber" />
-          <h3 className="font-semibold">每日思维挑战</h3>
+          <h3 className="font-semibold">{t('dashboard.dailyChallenge')}</h3>
         </div>
         <p className="text-sm text-muted mb-3">
-          今天的挑战：为什么音乐能影响情绪？（涉及物理 + 生物 + 心理学）
+          {t('dashboard.dailyChallengeDesc')}
         </p>
-        <span className="text-sm text-warm-amber">开始挑战 →</span>
+        <span className="text-sm text-warm-amber">{t('common.startChallenge')} →</span>
       </motion.div>
     </div>
   );

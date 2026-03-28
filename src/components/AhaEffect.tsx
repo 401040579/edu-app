@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useI18n } from '../i18n';
 
 interface Particle {
   id: number;
@@ -11,6 +12,7 @@ interface Particle {
 }
 
 export default function AhaEffect({ show, concept }: { show: boolean; concept?: string }) {
+  const { t } = useI18n();
   const [particles, setParticles] = useState<Particle[]>([]);
 
   useEffect(() => {
@@ -97,7 +99,7 @@ export default function AhaEffect({ show, concept }: { show: boolean; concept?: 
               className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2"
             >
               <div className="bg-deep-blue-light border border-warm-amber/30 rounded-2xl px-8 py-4 glow-amber">
-                <div className="text-warm-amber text-sm mb-1">概念发现!</div>
+                <div className="text-warm-amber text-sm mb-1">{t('aha.conceptDiscovered')}</div>
                 <div className="text-xl font-bold text-focus-white">{concept}</div>
               </div>
             </motion.div>

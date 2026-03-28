@@ -13,6 +13,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { knowledgeGraphNodes, knowledgeGraphEdges } from '../data/mockData';
+import { useI18n } from '../i18n';
 
 const subjectColors: Record<string, string> = {
   physics: '#F59E0B',
@@ -21,15 +22,6 @@ const subjectColors: Record<string, string> = {
   chemistry: '#34D399',
   biology: '#A78BFA',
   geography: '#2DD4BF',
-};
-
-const subjectNames: Record<string, string> = {
-  physics: '物理',
-  math: '数学',
-  history: '历史',
-  chemistry: '化学',
-  biology: '生物',
-  geography: '地理',
 };
 
 function KGNode({ data }: { data: { label: string; subject: string; mastery: number } }) {
@@ -61,6 +53,9 @@ const nodeTypes: NodeTypes = {
 
 export default function KnowledgeGraphPage() {
   const [filter, setFilter] = useState<string>('all');
+  const { t } = useI18n();
+
+  const subjectKeys = ['physics', 'math', 'history', 'chemistry', 'biology', 'geography'];
 
   const filteredNodes = useMemo(() => {
     return knowledgeGraphNodes.filter(
@@ -121,9 +116,9 @@ export default function KnowledgeGraphPage() {
     <div className="flex flex-col h-[calc(100dvh-80px)]">
       {/* Header */}
       <div className="px-4 pt-6 pb-4">
-        <h1 className="text-2xl font-bold mb-1">我的知识宇宙</h1>
+        <h1 className="text-2xl font-bold mb-1">{t('knowledgeGraph.title')}</h1>
         <p className="text-sm text-muted">
-          已探索 {totalConcepts} 个概念 | 平均掌握度 {avgMastery}%
+          {t('knowledgeGraph.stats', { concepts: totalConcepts, mastery: avgMastery })}
         </p>
 
         {/* Filters */}
@@ -136,11 +131,12 @@ export default function KnowledgeGraphPage() {
                 : 'bg-deep-blue-lighter text-muted hover:text-focus-white'
             }`}
           >
-            全部
+            {t('common.all')}
           </button>
-          {Object.entries(subjectNames).map(([key, name]) => {
+          {subjectKeys.map((key) => {
             const count = knowledgeGraphNodes.filter((n) => n.subject === key).length;
             if (count === 0) return null;
+            const name = t(`subjects.${key}`);
             return (
               <button
                 key={key}
@@ -194,10 +190,10 @@ export default function KnowledgeGraphPage() {
       {/* Legend */}
       <div className="px-4 pb-4">
         <div className="flex items-center justify-center gap-6 text-xs text-muted">
-          <span>节点大小 = 掌握深度</span>
+          <span>{t('knowledgeGraph.legendSize')}</span>
           <span className="flex items-center gap-1">
             <div className="w-6 h-0.5 bg-warm-amber" />
-            跨学科连接
+            {t('knowledgeGraph.legendCross')}
           </span>
         </div>
       </div>

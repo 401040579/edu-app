@@ -16,6 +16,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { Share2, RotateCcw, Sparkles } from 'lucide-react';
 import { allDialogueScripts } from '../data/dialogues';
+import { useI18n } from '../i18n';
 
 function ConceptNode({ data }: { data: { label: string; discoveredByStudent: boolean } }) {
   return (
@@ -43,6 +44,7 @@ const nodeTypes: NodeTypes = {
 export default function MindMapPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const script = allDialogueScripts.find((s) => s.id === id);
 
   const initialNodes: Node[] = useMemo(() => {
@@ -86,7 +88,7 @@ export default function MindMapPage() {
   if (!script) {
     return (
       <div className="flex items-center justify-center h-96">
-        <p className="text-muted">未找到对应的对话记录</p>
+        <p className="text-muted">{t('mindmap.notFound')}</p>
       </div>
     );
   }
@@ -98,19 +100,19 @@ export default function MindMapPage() {
     <div className="flex flex-col h-[calc(100dvh-56px)]">
       {/* Header */}
       <div className="px-4 py-4 border-b border-border">
-        <h2 className="text-lg font-semibold mb-1">思维发现地图</h2>
+        <h2 className="text-lg font-semibold mb-1">{t('mindmap.title')}</h2>
         <p className="text-sm text-muted">{script.title}</p>
         <div className="flex gap-4 mt-3">
           <div className="flex items-center gap-2 text-xs">
             <div className="w-3 h-3 rounded-full bg-warm-amber" />
             <span className="text-muted">
-              你发现的 ({studentDiscovered})
+              {t('mindmap.yourDiscovery')} ({studentDiscovered})
             </span>
           </div>
           <div className="flex items-center gap-2 text-xs">
             <div className="w-3 h-3 rounded-full bg-wisdom-purple" />
             <span className="text-muted">
-              AI引导的 ({total - studentDiscovered})
+              {t('mindmap.aiGuided')} ({total - studentDiscovered})
             </span>
           </div>
         </div>
@@ -143,25 +145,25 @@ export default function MindMapPage() {
             // Simulate share
             if (navigator.share) {
               navigator.share({
-                title: `我的思维地图 - ${script.title}`,
-                text: `我通过苏格拉底式对话，自己发现了${studentDiscovered}个概念！`,
+                title: t('mindmap.shareTitle', { title: script.title }),
+                text: t('mindmap.shareText', { count: studentDiscovered }),
                 url: window.location.href,
               }).catch(() => {});
             } else {
-              alert('思维地图链接已复制到剪贴板！');
+              alert(t('mindmap.shareCopied'));
             }
           }}
           className="flex-1 flex items-center justify-center gap-2 bg-wisdom-purple/20 border border-wisdom-purple/30 text-wisdom-purple-light rounded-xl py-3 hover:bg-wisdom-purple/30 transition-colors"
         >
           <Share2 className="w-4 h-4" />
-          分享
+          {t('common.share')}
         </button>
         <button
           onClick={() => navigate('/explore')}
           className="flex-1 flex items-center justify-center gap-2 bg-warm-amber text-deep-blue font-semibold rounded-xl py-3 hover:bg-warm-amber-light transition-colors"
         >
           <RotateCcw className="w-4 h-4" />
-          继续探索
+          {t('common.continueExplore')}
         </button>
       </div>
     </div>
